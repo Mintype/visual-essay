@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Basic Three.js Movement</title>
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; }
+        #info {
+            position: absolute; top: 10px; width: 100%; text-align: center;
+            color: #fff; font-family: sans-serif; z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <button id="btn" onclick="startFPS()">hey</button>
+    <div id="info">Click to move and look around</div>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/PointerLockControls.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+        // Assuming 'scene' is your Three.js scene object
+        scene.background = new THREE.Color(0x87ceeb); // Light blue color
+
+        // Add PointerLockControls
+        var controls = new THREE.PointerLockControls(camera, document.body);
+
+        console.log("PointerLockControls initialized");
+        function startFPS() {
+            document.getElementById("btn").style.display = "none"; // Hide the button
+            console.log("FPS started");
+            document.getElementById("info").innerHTML = "FPS started! Click to move and look around.";
+            controls.lock(); // Lock the pointer to start the FPS mode
+        }
+
+        scene.add(controls.getObject());
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Basic floor
+        const floorGeometry = new THREE.PlaneGeometry(100, 100);
+        const floorMaterial = new THREE.MeshBasicMaterial({ color: 0x99ff99, side: THREE.DoubleSide });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // // Create a grid
+        // var gridHelper = new THREE.GridHelper(100, 100);
+
+        // // Set the color of the grid lines to white
+        // gridHelper.material.color.set(0xffffff);
+
+        // scene.add(gridHelper);
+
+        camera.position.y = 2; // camera height
+
+        // Movement variables
+        const moveSpeed = 0.05;
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        const keys = {};
+
+        // Add event listeners
+        document.addEventListener("keydown", onDocumentKeyDown, false);
+        document.addEventListener("keyup", onDocumentKeyUp, false);
+
+        function onDocumentKeyDown(event) {
+            keys[event.key] = true; // Set key state to true when pressed
+        }
+
+        function onDocumentKeyUp(event) {
+            keys[event.key] = false; // Set key state to false when released
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            var delta = 0.25;
+
+            // // Example: Move camera based on key presses
+            if (keys["w"]) {
+                // Move forward
+                controls.moveForward(delta);
+            }
+            if (keys["s"]) {
+                // Move backward
+                controls.moveForward(-delta);
+            }
+            if (keys["a"]) {
+                // Move left
+                controls.moveRight(-delta);
+            }
+            if (keys["d"]) {
+                // Move right
+                controls.moveRight(delta);
+            }
+            // if (keys["e"]) {
+            //     // Move left
+            //     camera.position.y += 0.1;
+            // }
+            // if (keys["q"]) {
+            //     // Move right
+            //     camera.position.y -= 0.1;
+            // }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

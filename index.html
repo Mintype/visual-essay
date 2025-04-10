@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Physics-Based Three.js Movement with Jumping</title>
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-family: sans-serif;
+            z-index: 1;
+        }
+        #btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            padding: 20px 40px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        #backgroundDim {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 0;
+        }
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-family: sans-serif;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+        .interactPrompt {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-family: sans-serif;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="backgroundDim"></div>
+    <button id="btn" onclick="startFPS()">Start</button>
+    <div id="info">Click the button to start and move around</div>
+    <div id="controls">
+        Controls:<br>
+        W,A,S,D - Move<br>
+        SPACE - Jump<br>
+        Shift - Sprint<br>
+        E - Interact
+    </div>
+    <div id="crosshair"></div> <!-- Crosshair element -->
+    <div class="interactPrompt" id="interactPrompt">Press E to interact</div>
+    <div class="interactPrompt" id="goBackPrompt">Press E to go back</div>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/PointerLockControls.js"></script>
+    <!-- Add FontLoader and TextGeometry -->
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/geometries/TextGeometry.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        let started = false;
+        let canStartJump = true;
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+        scene.background = new THREE.Color(0x87ceeb); // Light blue color
+
+        var controls = new THREE.PointerLockControls(camera, document.body);
+
+        // Array to store all collidable objects
+        const collidableObjects = [];
+        
+        console.log("PointerLockControls initialized");
+        function startFPS() {
+            document.getElementById("btn").style.display = "none"; // Hide the button
+            document.getElementById("backgroundDim").style.display = "none"; // Hide the dimmed background
+            console.log("FPS started");
+            document.getElementById("info").innerHTML = "WASD to move, SPACE to jump, E to interact";
+            controls.lock(); // Lock the pointer to start the FPS mode
+            started = true;
+        }
+
+        // Relock controls when clicked after unlock
+        document.addEventListener('click', () => {
+            if (started && !controls.isLocked) {
+                controls.lock();
+            }
+        });
+
+        scene.add(controls.getObject());
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // // Create a grid for the ground
+        // var gridHelper = new THREE.GridHelper(200, 200);
+        // gridHelper.position.y = 0;
+        // scene.add(gridHelper);
+
+        const textureLoader = new THREE.TextureLoader();
+
+        // Load the grass texture
+        const grassTexture = textureLoader.load('textures/grass.jpg'); // Replace with your texture path
+
+        grassTexture.wrapS = THREE.RepeatWrapping;
+        grassTexture.wrapT = THREE.RepeatWrapping;
+        grassTexture.repeat.set(100, 100); // Adjust texture repeat (higher values for more repetition)
+
+        const floorGeometry = new THREE.PlaneGeometry(300, 300);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            map: grassTexture, 
+            side: THREE.DoubleSide
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // lighting
+        const light = new THREE.AmbientLight(0x404040, 1); // Ambient light
+        scene.add(light);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(5, 5, 5).normalize();
+        scene.add(directionalLight);
+
+        // Load Skybox textures
+        const loader = new THREE.CubeTextureLoader();
+        loader.setPath('/textures/sky/'); // Replace with your skybox textures folder path
+        const textureCube = loader.load([
+            'px.png', 'nx.png', // Right, Left
+            'py.png', 'ny.png', // Top, Bottom
+            'pz.png', 'nz.png'  // Front, Back
+        ]);
+        scene.background = textureCube;
+
+
+        // Text in sky
+        function addSkyText() {
+            // Using the FontLoader to load a font
+            const fontLoader = new THREE.FontLoader();
+            
+            // Loading the font (using a common Three.js font)
+            fontLoader.load('https://cdn.jsdelivr.net/npm/three@latest/examples/fonts/helvetiker_bold.typeface.json', function(font) {
+                // Text geometry parameters
+                const textOptions = {
+                    font: font,
+                    size: 3,          // Size of the text
+                    height: 0.8,      // Thickness/depth of the text
+                    curveSegments: 12, // Number of points on the curves
+                    bevelEnabled: true,
+                    bevelThickness: 0.2,
+                    bevelSize: 0.1,
+                    bevelOffset: 0,
+                    bevelSegments: 5
+                };
+                
+                // Create text geometry with the message
+                const textGeometry = new THREE.TextGeometry('The Role of Luck in Overcoming Adversity', textOptions);
+                
+                // Center the text geometry
+                textGeometry.computeBoundingBox();
+                const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+                textGeometry.translate(-textWidth / 2, -8, 0);
+                
+                // Create a material for the text - using gradient material for nice effect
+                const textMaterial = [
+                    // Front face
+                    new THREE.MeshPhongMaterial({ color: 0xAAAAAA, specular: 0x555555, shininess: 30 }),
+                    // Side faces
+                    new THREE.MeshPhongMaterial({ color: 0x888888, specular: 0x222222, shininess: 30 })
+                ];
+                
+                // Create the text mesh
+                const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+                
+                // Position the text high in the sky, visible from spawn position
+                textMesh.position.set(0, 30, -40); // y: height, z: distance in front
+                
+                // Add subtle rotation for better visibility
+                textMesh.rotation.x = Math.PI * 0.1; // Slight tilt for better viewing from below
+                
+                // Add to scene
+                scene.add(textMesh);
+                
+                // Create a spotlight to highlight the text
+                const spotlight = new THREE.SpotLight(0xffffff, 1.5);
+                spotlight.position.set(0, 25, -30);
+                spotlight.target = textMesh;
+                spotlight.angle = Math.PI / 6;
+                spotlight.penumbra = 0.1;
+                spotlight.distance = 60;
+                scene.add(spotlight);
+            });
+        }
+        
+        // Call the function to add sky text
+        addSkyText();
+
+        // Add pedestal with button and text
+        function createPedestalAndButton() {
+            const pedestalGroup = new THREE.Group();
+            
+            // Create pedestal
+            const pedestalGeometry = new THREE.CylinderGeometry(0.75, 0.3, 2.75, 32);
+            const pedestalMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 }); // Brown color
+            const pedestal = new THREE.Mesh(pedestalGeometry, pedestalMaterial);
+            pedestalGroup.add(pedestal);
+            
+            // Add pedestal to collidable objects
+            pedestal.userData.isCollidable = true;
+            collidableObjects.push(pedestal);
+            
+            // Create button on top of pedestal
+            const buttonGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 32);
+            const buttonMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red button
+            const button = new THREE.Mesh(buttonGeometry, buttonMaterial);
+            button.position.y = 1.5;
+            button.name = "secretButton"; // Name for raycasting
+            pedestalGroup.add(button);
+            
+            // Add button to collidable objects
+            button.userData.isCollidable = true;
+            collidableObjects.push(button);
+            
+            // Add text above button
+            const fontLoader = new THREE.FontLoader();
+            fontLoader.load('https://cdn.jsdelivr.net/npm/three@latest/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+                const textOptions = {
+                    font: font,
+                    size: 0.2,
+                    height: 0.05,
+                    curveSegments: 12,
+                    bevelEnabled: false
+                };
+                
+                const textGeometry = new THREE.TextGeometry('Click me to start!', textOptions);
+                textGeometry.computeBoundingBox();
+                const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+                textGeometry.translate(-textWidth / 2, 0, 0);
+                
+                const textMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+                const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+                textMesh.position.set(0, 1.8, 0);
+                pedestalGroup.add(textMesh);
+            });
+            
+            // Position the pedestal
+            pedestalGroup.position.set(0, 0, -10); // 10 units in front of spawn
+            scene.add(pedestalGroup);
+            
+            return button;
+        }
+
+        function createTextWall() {
+    // Create a canvas
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    // Set canvas size (adjust as needed for text clarity)
+    canvas.width = 1024;
+    canvas.height = 1024;
+    
+    // Draw background
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Style and draw text
+    context.fillStyle = '#000000';
+    context.font = '36px Arial';
+    context.textAlign = 'left';
+    
+    // Text to display
+    const essayText = 
+        "           We all experience adversities in life. Sometimes it's serious, like a major accident, while other times it's small things, like the struggles of everyday life. Most people in this society like to think that getting through these rough times is just a test of grit, resilience, and determination, or, in other words, our own personal character. While that might be true, we usually don't give much attention to one other important factor: luck. The truth is, a lot of people succeed not just because they worked hard, but because things happened to line up for them—perfect timing, random chances, or just pure luck. If one works hard enough, they can become successful—this is the idea that most people have about success in something. While this idea may be true, luck undeniably plays a huge role in one's success in overcoming adversity. Ultimately, while personal strength and determination help us push through tough times, factors like timing, luck, and circumstances often have a huge impact on whether we succeed or not.";
+    
+    // Word wrap function
+    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        let testLine = '';
+        let lineCount = 0;
+        
+        for(let n = 0; n < words.length; n++) {
+            testLine = line + words[n] + ' ';
+            const metrics = context.measureText(testLine);
+            const testWidth = metrics.width;
+            
+            if (testWidth > maxWidth && n > 0) {
+                context.fillText(line, x, y + (lineCount * lineHeight));
+                line = words[n] + ' ';
+                lineCount++;
+            }
+            else {
+                line = testLine;
+            }
+        }
+        
+        context.fillText(line, x, y + (lineCount * lineHeight));
+    }
+    
+    // Apply word wrapping
+    wrapText(context, essayText, 30, 50, canvas.width - 60, 36);
+    
+    // Use canvas as a texture
+    const texture = new THREE.CanvasTexture(canvas);
+    
+    // Create material with the texture
+    const material = new THREE.MeshBasicMaterial({ 
+        map: texture,
+        side: THREE.DoubleSide
+    });
+    
+    // Create plane for the text wall
+    const geometry = new THREE.PlaneGeometry(10, 10 * (canvas.height / canvas.width));
+    const plane = new THREE.Mesh(geometry, material);
+    
+    // Position slightly in front of wall to prevent z-fighting
+    plane.position.set(0, 0, -20/2 + 0.05);
+    
+    return plane;
+}
+        
+        // Create secret room under the map
+        function createSecretRoom() {
+            const roomGroup = new THREE.Group();
+            
+            // Room dimensions
+            const roomWidth = 20;
+            const roomHeight = 10;
+            const roomDepth = 20;
+            
+            // Room walls materials
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xeeeeee, 
+                side: THREE.DoubleSide,
+            });
+
+            const invisMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xeeeeee, 
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.0
+            });
+            
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
+            const floorMesh = new THREE.Mesh(floorGeometry, wallMaterial);
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.position.y = -roomHeight/2;
+            roomGroup.add(floorMesh);
+
+            // Load the grass texture
+            const sideWalkTexture = textureLoader.load('textures/sidewalk.jpg'); // Replace with your texture path
+
+            sideWalkTexture.wrapS = THREE.RepeatWrapping;
+            sideWalkTexture.wrapT = THREE.RepeatWrapping;
+            sideWalkTexture.repeat.set(1, 10); // Adjust texture repeat (higher values for more repetition)
+
+            const sideWalkMaterial = new THREE.MeshStandardMaterial({ 
+                map: sideWalkTexture, 
+                side: THREE.DoubleSide
+            });
+
+            // Floor
+            const floorGeometry1 = new THREE.PlaneGeometry(40, 200);
+            const floorMesh1 = new THREE.Mesh(floorGeometry1, sideWalkMaterial);
+            floorMesh1.rotation.x = -Math.PI / 2;
+            floorMesh1.position.y = -roomHeight/2 - 0.01;
+            floorMesh1.position.x = 20;
+            roomGroup.add(floorMesh1);
+
+            // Load the grass texture
+            const roadTexture = textureLoader.load('textures/road.jpg'); // Replace with your texture path
+
+            roadTexture.wrapS = THREE.RepeatWrapping;
+            roadTexture.wrapT = THREE.RepeatWrapping;
+            roadTexture.repeat.set(8, 1); // Adjust texture repeat (higher values for more repetition)
+
+            const roadMaterial = new THREE.MeshStandardMaterial({ 
+                map: roadTexture, 
+                side: THREE.DoubleSide
+            });
+
+            const roadGeometry = new THREE.PlaneGeometry(200, 20);
+            const roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
+            roadMesh.rotation.x = -Math.PI / 2;
+            roadMesh.rotation.z = Math.PI / 2;
+            roadMesh.position.y = -roomHeight/2 + 0.01;
+            roadMesh.position.x = 25;
+            roomGroup.add(roadMesh);
+            
+            // Ceiling
+            const ceilingMesh = new THREE.Mesh(floorGeometry, wallMaterial);
+            ceilingMesh.rotation.x = Math.PI / 2;
+            ceilingMesh.position.y = roomHeight/2;
+            roomGroup.add(ceilingMesh);
+            
+            // Walls
+            // Back wall (with essay)
+            const backWallGeometry = new THREE.PlaneGeometry(roomWidth, roomHeight);
+            const backWallMesh = new THREE.Mesh(backWallGeometry, wallMaterial);
+            backWallMesh.position.z = -roomDepth/2;
+            roomGroup.add(backWallMesh);
+            
+            // Add back wall to collidable objects
+            backWallMesh.userData.isCollidable = true;
+            collidableObjects.push(backWallMesh);
+            
+            // Front wall
+            const frontWallMesh = new THREE.Mesh(backWallGeometry, wallMaterial);
+            frontWallMesh.position.z = roomDepth/2;
+            frontWallMesh.rotation.y = Math.PI;
+            roomGroup.add(frontWallMesh);
+            
+            // Add front wall to collidable objects
+            frontWallMesh.userData.isCollidable = true;
+            collidableObjects.push(frontWallMesh);
+            
+            // Left wall
+            const sideWallGeometry = new THREE.PlaneGeometry(roomDepth, roomHeight);
+            const leftWallMesh = new THREE.Mesh(sideWallGeometry, wallMaterial);
+            leftWallMesh.position.x = -roomWidth/2;
+            leftWallMesh.rotation.y = Math.PI / 2;
+            roomGroup.add(leftWallMesh);
+            
+            // Add left wall to collidable objects
+            leftWallMesh.userData.isCollidable = true;
+            collidableObjects.push(leftWallMesh);
+            
+            // Right wall
+            const rightWallMesh = new THREE.Mesh(sideWallGeometry, invisMaterial);
+            rightWallMesh.position.x = roomWidth/2;
+            rightWallMesh.rotation.y = -Math.PI / 2;
+            roomGroup.add(rightWallMesh);
+            
+            // Add right wall to collidable objects
+            rightWallMesh.userData.isCollidable = true;
+            collidableObjects.push(rightWallMesh);
+            
+        //     // Add essay introduction on the back wall
+        //     const fontLoader = new THREE.FontLoader();
+        //     fontLoader.load('https://cdn.jsdelivr.net/npm/three@latest/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+        //         const textOptions = {
+        //             font: font,
+        //             size: 0.25,
+        //             height: 0.05,
+        //             curveSegments: 12,
+        //             bevelEnabled: false
+        //         };
+        //         const essayText = 
+        // "We all experience adversities in life. Sometimes it’s serious, like a major accident, while other times it’s small things, like the struggles of everyday life. Most people in this society like to think that getting through these rough times is just a test of grit, resilience, and determination, or, in other words, our own personal character. While that might be true, we usually don't give much attention to one other important factor: luck. The truth is, a lot of people succeed not just because they worked hard, but because things happened to line up for them—perfect timing, random chances, or just pure luck. If one works hard enough, they can become successful — this is the idea that most people have about success in something. While this idea may be true, luck undeniably plays a huge role in one’s success in overcoming adversity. Ultimately, while personal strength and determination help us push through tough times, factors like timing, luck, and circumstances often have a huge impact on whether we succeed or not.";
+                
+        //         const textGeometry = new THREE.TextGeometry(essayText, textOptions);
+        //         textGeometry.computeBoundingBox();
+        //         const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+        //         textGeometry.translate(-textWidth / 2 + 12, 2, 0);
+                
+        //         const textMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+        //         const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        //         textMesh.position.set(0, 1, -roomDepth/2 + 0.1); // Slightly in front of the wall
+        //         roomGroup.add(textMesh);
+        //     });
+            
+            // Use this in your createSecretRoom function
+            const textWall = createTextWall();
+            roomGroup.add(textWall);
+
+            // Add lighting to the room
+            const roomLight = new THREE.PointLight(0xffffff, 1.5, 30);
+            roomLight.position.set(0, 5, 0);
+            roomGroup.add(roomLight);
+            
+            // Position the room under the map
+            roomGroup.position.set(200, 3, 0);
+            scene.add(roomGroup);
+            
+            return roomGroup;
+        }
+        
+        // Create the pedestal with button
+        const secretButton = createPedestalAndButton();
+        
+        // Create the secret room
+        const secretRoom = createSecretRoom();
+        
+        // Raycaster for button interaction and collision detection
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let isNearButton = false;
+        let canInteract = true;
+        
+        // Function to teleport player to secret room
+        function teleportToSecretRoom() {
+            const cameraObject = controls.getObject();
+            cameraObject.position.set(200, 0, 0); // Position inside the secret room
+            velocity.set(0, 0, 0); // Reset velocity
+        }
+
+        // Function to teleport player back to spawn
+        function teleportToSpawn() {
+            const cameraObject = controls.getObject();
+            cameraObject.position.set(0, 2, 0); // Position
+            velocity.set(0, 0, 0); // Reset velocity
+        }
+
+        function teleportToPartTwo() {
+            const cameraObject = controls.getObject();
+            cameraObject.position.set(-200, 2, 0); // Position
+            velocity.set(0, 0, 0); // Reset velocity
+        }
+
+        // Model loading
+        const modelLoader = new THREE.GLTFLoader();
+        let model;
+
+        // This URL points to a sample 3D model - you may need to use your own hosted model
+        modelLoader.load(
+            'models/car.glb',
+            function(gltf) {
+                model = gltf.scene;
+                model.traverse(function(node) {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                
+                // Center and scale the model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 10 / maxDim;
+                model.scale.set(scale, scale, scale);
+                
+                model.position.sub(center.multiplyScalar(scale));
+                model.position = new THREE.Vector3(0, 0, 0); // Position model at origin
+                model.position.y = -0.5; // Raise model slightly above ground
+                model.position.x = 230;
+                model.rotation.y = -Math.PI / 1;
+                model.position.z = 50;
+                scene.add(model);
+            },
+            function(xhr) {
+                // Progress callback if needed
+            },
+            function(error) {
+                console.error('An error happened while loading the model:', error);
+            }
+        );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        // Player physics variables
+        const playerHeight = 2;
+        const gravity = 0.03;
+        const jumpForce = 0.4;
+        const acceleration = 0.05;
+        let maxSpeed = 0.1;
+        const friction = 0.92; // Friction factor (lower = more friction)
+        const playerRadius = 0.5; // Collision radius of the player
+
+        // Set initial camera position
+        camera.position.y = playerHeight;
+
+        // Player physics state
+        const velocity = new THREE.Vector3(0, 0, 0);
+        const inputDirection = new THREE.Vector3();
+        let canJump = true;
+        const keys = {};
+
+        document.addEventListener("keydown", onDocumentKeyDown, false);
+        document.addEventListener("keyup", onDocumentKeyUp, false);
+
+        let amountOfTimesTriedToGoBack = 0;
+
+        function onDocumentKeyDown(event) {
+            keys[event.key.toLowerCase()] = true;
+
+            // Handle jump when spacebar is pressed and player can jump
+            if (event.code === 'Space' && canJump && velocity.y === 0 && canStartJump) {
+                velocity.y = jumpForce;
+                canJump = false;
+            }
+            
+            // Handle interaction with button (E key)
+            if (event.key.toLowerCase() === 'e' && isNearButton && canInteract) {
+                teleportToSecretRoom();
+                canInteract = false; // Prevent repeated teleportation
+                canStartJump = false; // Disable jumping in secret room
+                document.getElementById("goBackPrompt").style.display = "block";
+                setTimeout(() => { canInteract = true; }, 1000); // Reset after 1 second
+            }
+            if (event.key.toLowerCase() === 'e' && canInteract && document.getElementById("goBackPrompt").style.display === "block") {
+
+                if (amountOfTimesTriedToGoBack == 0){
+                    document.getElementById("goBackPrompt").innerText = 'Something broke! Try pressing E again.';
+                } else if (amountOfTimesTriedToGoBack == 1){
+                    document.getElementById("goBackPrompt").innerText = 'Press E to generate a random number. (1-5)\nIf your number is 1 then you can go back.';
+                } else {
+                    const randomNumber = Math.floor(Math.random() * 5) + 1;
+                    if (randomNumber === 1) {
+                        teleportToSpawn();
+                        document.getElementById("goBackPrompt").innerText = 'You rolled a ' + randomNumber + '!';
+                        canInteract = false; // Allow interaction again
+                        canStartJump = true; // Enable jumping again
+                        setTimeout(() => {
+                            canInteract = true;
+                            document.getElementById("goBackPrompt").style.display = "none";
+                        }, 1000); // Reset after 1 second
+                    } else {
+                        document.getElementById("goBackPrompt").innerText = 'You rolled a ' + randomNumber + '. Try again! (press E)';
+                    }
+                }
+                amountOfTimesTriedToGoBack++;
+                // teleportToSpawn();
+                // document.getElementById("goBackPrompt").style.display = "none";
+                // canInteract = false; // Prevent repeated teleportation
+                // canStartJump = true; // Disable jumping in secret room
+                // setTimeout(() => { canInteract = true; }, 1000); // Reset after 1 second
+            }
+        }
+
+        function onDocumentKeyUp(event) {
+            keys[event.key.toLowerCase()] = false;
+        }
+
+        // Check if moving in a direction would cause a collision
+        function checkCollision(position, direction, distance) {
+            // Create the raycaster from the player's position in the direction of movement
+            raycaster.set(position, direction.normalize());
+            
+            // Check for intersections with collidable objects
+            const intersections = raycaster.intersectObjects(collidableObjects);
+            
+            // If there's an intersection within the distance, collision detected
+            return intersections.length > 0 && intersections[0].distance < distance;
+        }
+
+        // Get time for consistent physics regardless of framerate
+        let prevTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if(started) {
+                // Calculate delta time for frame-rate independent physics
+                const time = performance.now();
+                const delta = (time - prevTime) / 1000; // Convert to seconds
+                prevTime = time;
+                
+                model.position.z += -30 * delta; // Move the model forward slowly
+                if (model.position.z < -60) {
+                    model.position.z = 60;
+                }
+
+                // Apply physics only if controls are locked
+                if (controls.isLocked) {
+                    // Reset input direction
+                    inputDirection.set(0, 0, 0);
+
+                    // Get movement direction from key presses
+                    if (keys["w"]) inputDirection.z = 1;
+                    if (keys["s"]) inputDirection.z = -1;
+                    if (keys["a"]) inputDirection.x = 1;
+                    if (keys["d"]) inputDirection.x = -1;
+                    
+                    if (keys["shift"]) maxSpeed = 0.2; // Sprinting speed
+                    else maxSpeed = 0.1; // Normal speed
+
+                    // Normalize input direction to prevent diagonal speed boost
+                    if (inputDirection.length() > 0) {
+                        inputDirection.normalize();
+                    }
+
+                    // Get camera direction vectors
+                    const cameraObject = controls.getObject();
+                    const cameraDirection = new THREE.Vector3();
+                    cameraObject.getWorldDirection(cameraDirection);
+                    
+                    // Calculate forward and right vectors (relative to camera orientation)
+                    // We only want horizontal movement, so we zero out the Y component and renormalize
+                    cameraDirection.y = 0;
+                    cameraDirection.normalize();
+                    
+                    // Calculate right vector (perpendicular to forward vector and up)
+                    const rightVector = new THREE.Vector3();
+                    rightVector.crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
+                    
+                    // Calculate movement vector based on input and camera orientation
+                    const moveX = rightVector.clone().multiplyScalar(inputDirection.x);
+                    const moveZ = cameraDirection.clone().multiplyScalar(inputDirection.z);
+                    
+                    // Combined movement direction (camera-relative)
+                    const moveDirection = new THREE.Vector3().addVectors(moveX, moveZ);
+                    
+                    // Apply acceleration in the direction the player is trying to move
+                    if (moveDirection.length() > 0) {
+                        velocity.x += moveDirection.x * acceleration * delta * 60;
+                        velocity.z += moveDirection.z * acceleration * delta * 60;
+                    }
+
+                    // Apply friction
+                    velocity.x *= friction;
+                    velocity.z *= friction;
+
+                    // Limit maximum horizontal speed
+                    const horizontalSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+                    if (horizontalSpeed > maxSpeed) {
+                        const ratio = maxSpeed / horizontalSpeed;
+                        velocity.x *= ratio;
+                        velocity.z *= ratio;
+                    }
+
+                    // Apply gravity
+                    velocity.y -= gravity * delta * 60; // Scale with delta time and normalize to 60fps
+
+                    // Store original position for collision restoration
+                    const originalPosition = cameraObject.position.clone();
+                    
+                    // Calculate new position
+                    const newPosition = originalPosition.clone();
+                    newPosition.x += velocity.x;
+                    newPosition.z += velocity.z;
+                    
+                    // Check for horizontal collisions in X direction
+                    if (velocity.x !== 0) {
+                        const directionX = new THREE.Vector3(velocity.x > 0 ? 1 : -1, 0, 0);
+                        if (checkCollision(originalPosition, directionX, playerRadius + Math.abs(velocity.x))) {
+                            velocity.x = 0; // Stop movement in X direction
+                        }
+                    }
+                    
+                    // Check for horizontal collisions in Z direction
+                    if (velocity.z !== 0) {
+                        const directionZ = new THREE.Vector3(0, 0, velocity.z > 0 ? 1 : -1);
+                        if (checkCollision(originalPosition, directionZ, playerRadius + Math.abs(velocity.z))) {
+                            velocity.z = 0; // Stop movement in Z direction
+                        }
+                    }
+                    
+                    // Move the player based on velocity (after collision checks)
+                    cameraObject.position.x += velocity.x;
+                    cameraObject.position.z += velocity.z;
+                    cameraObject.position.y += velocity.y;
+
+                    // Check for floor collision
+                    if (cameraObject.position.y < playerHeight) {
+                        velocity.y = 0;
+                        cameraObject.position.y = playerHeight;
+                        canJump = true; // Allow jumping again when on the ground
+                    }
+                    
+                    // Check if player is near the button
+                    // Create a vector pointing from camera to button
+                    const playerPos = cameraObject.position.clone();
+                    const buttonPos = new THREE.Vector3(0, 1, -10); // Button position
+                    const distance = playerPos.distanceTo(buttonPos);
+                    
+                    // If player is within 3 units of the button, show interaction prompt
+                    if (distance < 3) {
+                        isNearButton = true;
+                        document.getElementById("interactPrompt").style.display = "block";
+                    } else {
+                        isNearButton = false;
+                        document.getElementById("interactPrompt").style.display = "none";
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
