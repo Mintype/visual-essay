@@ -86,7 +86,8 @@
     </div>
     <div id="crosshair"></div> <!-- Crosshair element -->
     <div class="interactPrompt" id="interactPrompt">Press E to interact</div>
-    <div class="interactPrompt" id="goBackPrompt">Press E to go back</div>
+    <div class="interactPrompt" id="goBackPrompt">Press E to go to the next place</div>
+    <div class="interactPrompt" id="toForrestPrompt">Press E to go to the next place</div>
     <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/PointerLockControls.js"></script>
@@ -290,7 +291,7 @@
             return button;
         }
 
-        function createTextWall() {
+        function createTextWall(stareee, essayText1) {
     // Create a canvas
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -303,24 +304,22 @@
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Style and draw text
+    // Style for text
     context.fillStyle = '#000000';
     context.font = '36px Arial';
     context.textAlign = 'left';
     
-    // Text to display
-    const essayText = 
-        "           We all experience adversities in life. Sometimes it's serious, like a major accident, while other times it's small things, like the struggles of everyday life. Most people in this society like to think that getting through these rough times is just a test of grit, resilience, and determination, or, in other words, our own personal character. While that might be true, we usually don't give much attention to one other important factor: luck. The truth is, a lot of people succeed not just because they worked hard, but because things happened to line up for them—perfect timing, random chances, or just pure luck. If one works hard enough, they can become successful—this is the idea that most people have about success in something. While this idea may be true, luck undeniably plays a huge role in one's success in overcoming adversity. Ultimately, while personal strength and determination help us push through tough times, factors like timing, luck, and circumstances often have a huge impact on whether we succeed or not.";
-    
-    // Word wrap function
+    // Text to display (paragraph text)
+    // const essayText = "            We all experience adversities in life. Sometimes it's serious, like a major accident, while other times it's small things, like the struggles of everyday life. Most people in this society like to think that getting through these rough times is just a test of grit, resilience, and determination, or, in other words, our own personal character. While that might be true, we usually don't give much attention to one other important factor: luck. The truth is, a lot of people succeed not just because they worked hard, but because things happened to line up for them—perfect timing, random chances, or just pure luck. If one works hard enough, they can become successful—this is the idea that most people have about success in something. While this idea may be true, luck undeniably plays a huge role in one's success in overcoming adversity. Ultimately, while personal strength and determination help us push through tough times, factors like timing, luck, and circumstances often have a huge impact on whether we succeed or not.";
+    const essayText = essayText1;
+    // Word wrap function for the paragraph (without a header line)
     function wrapText(context, text, x, y, maxWidth, lineHeight) {
         const words = text.split(' ');
         let line = '';
-        let testLine = '';
         let lineCount = 0;
         
         for(let n = 0; n < words.length; n++) {
-            testLine = line + words[n] + ' ';
+            const testLine = line + words[n] + ' ';
             const metrics = context.measureText(testLine);
             const testWidth = metrics.width;
             
@@ -328,17 +327,24 @@
                 context.fillText(line, x, y + (lineCount * lineHeight));
                 line = words[n] + ' ';
                 lineCount++;
-            }
-            else {
+            } else {
                 line = testLine;
             }
         }
-        
+        // draw last line
         context.fillText(line, x, y + (lineCount * lineHeight));
     }
     
-    // Apply word wrapping
-    wrapText(context, essayText, 30, 50, canvas.width - 60, 36);
+    // Define starting positions
+    const startX = 30;
+    const startY = 50;
+    const lineHeight = 36;
+    
+    // Write header "Introduction:" on its own line
+    context.fillText(stareee, startX, startY);
+    
+    // Apply word wrapping for essayText starting on the next line
+    wrapText(context, essayText, startX, startY + lineHeight + lineHeight, canvas.width - 60, lineHeight);
     
     // Use canvas as a texture
     const texture = new THREE.CanvasTexture(canvas);
@@ -359,7 +365,19 @@
     return plane;
 }
         
-        // Create secret room under the map
+
+
+
+
+
+
+
+
+
+
+
+
+// Create secret room under the map
         function createSecretRoom() {
             const roomGroup = new THREE.Group();
             
@@ -393,7 +411,7 @@
 
             sideWalkTexture.wrapS = THREE.RepeatWrapping;
             sideWalkTexture.wrapT = THREE.RepeatWrapping;
-            sideWalkTexture.repeat.set(1, 10); // Adjust texture repeat (higher values for more repetition)
+            sideWalkTexture.repeat.set(1, 14); // Adjust texture repeat (higher values for more repetition)
 
             const sideWalkMaterial = new THREE.MeshStandardMaterial({ 
                 map: sideWalkTexture, 
@@ -401,7 +419,7 @@
             });
 
             // Floor
-            const floorGeometry1 = new THREE.PlaneGeometry(40, 200);
+            const floorGeometry1 = new THREE.PlaneGeometry(40, 300);
             const floorMesh1 = new THREE.Mesh(floorGeometry1, sideWalkMaterial);
             floorMesh1.rotation.x = -Math.PI / 2;
             floorMesh1.position.y = -roomHeight/2 - 0.01;
@@ -413,14 +431,14 @@
 
             roadTexture.wrapS = THREE.RepeatWrapping;
             roadTexture.wrapT = THREE.RepeatWrapping;
-            roadTexture.repeat.set(8, 1); // Adjust texture repeat (higher values for more repetition)
+            roadTexture.repeat.set(12, 1); // Adjust texture repeat (higher values for more repetition)
 
             const roadMaterial = new THREE.MeshStandardMaterial({ 
                 map: roadTexture, 
                 side: THREE.DoubleSide
             });
 
-            const roadGeometry = new THREE.PlaneGeometry(200, 20);
+            const roadGeometry = new THREE.PlaneGeometry(300, 20);
             const roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
             roadMesh.rotation.x = -Math.PI / 2;
             roadMesh.rotation.z = Math.PI / 2;
@@ -467,14 +485,58 @@
             collidableObjects.push(leftWallMesh);
             
             // Right wall
-            const rightWallMesh = new THREE.Mesh(sideWallGeometry, invisMaterial);
+            const rightWallMesh = new THREE.Mesh(sideWallGeometry, wallMaterial);
             rightWallMesh.position.x = roomWidth/2;
             rightWallMesh.rotation.y = -Math.PI / 2;
             roomGroup.add(rightWallMesh);
-            
-            // Add right wall to collidable objects
+       // Add right wall to collidable objects
             rightWallMesh.userData.isCollidable = true;
             collidableObjects.push(rightWallMesh);
+
+
+            // city walls
+
+                        // Load the grass texture
+            const cityTex = textureLoader.load('textures/city.jpg'); // Replace with your texture path
+
+            cityTex.wrapS = THREE.RepeatWrapping;
+            cityTex.wrapT = THREE.RepeatWrapping;
+            cityTex.repeat.set(12, 1); // Adjust texture repeat (higher values for more repetition)
+
+            const cityMat = new THREE.MeshStandardMaterial({ 
+                map: cityTex, 
+                side: THREE.DoubleSide,
+            });
+
+            const rightWallMesh2 = new THREE.Mesh(new THREE.PlaneGeometry(300, 30), cityMat);
+            rightWallMesh2.position.x = roomWidth/2 + 0.01;
+            rightWallMesh2.rotation.y = -Math.PI / 2;
+            rightWallMesh2.position.y = 4;
+            roomGroup.add(rightWallMesh2);
+            rightWallMesh2.userData.isCollidable = true;
+            //collidableObjects.push(rightWallMesh2);
+            rightWallMesh2.castShadow = false;
+            rightWallMesh2.receiveShadow = false;
+
+            // Right wall
+            const rightWallMesh1 = new THREE.Mesh(new THREE.PlaneGeometry(300, 30), cityMat);
+            rightWallMesh1.position.x = roomWidth/2 + 30;
+            rightWallMesh1.rotation.y = -Math.PI / 2;
+            rightWallMesh1.position.y = 4;
+            roomGroup.add(rightWallMesh1);
+            rightWallMesh1.castShadow = false;
+            rightWallMesh1.receiveShadow = false;
+            
+            rightWallMesh1.userData.isCollidable = true;
+            //collidableObjects.push(rightWallMesh1);
+
+            const roomLight1 = new THREE.PointLight(0xffffff, 5.5, 30);
+            roomLight1.position.set(225, 5, 0);
+            roomGroup.add(roomLight1);
+            
+            const cityText = createTextWall("Gary Cohn: ", "            Gary Cohn's journey clearly illustrates how luck can significantly influence success. In Malcolm Gladwell's David and Goliath, Cohn, who struggled with dyslexia, out of the blue, hopped into a taxi with a top Wall Street executive (Gladwell, 2013, p. 121). During his taxi ride, he “[pretended] to be an experienced options trader when in fact he was not, ”(Gladwell, 2013, p. 122). Cohn ended up interviewing and getting the job, which was revolutionary for him, as a job like this was so unexpected for him. Previous to this, he was “selling aluminum siding and window frames for the U.S. Steel in Cleveland,” (Gladwell, 2013, p. 120). Gladwell in his novel pushes this story as the result of the certain strengths Cohn possessed due to his dyslexia. Although, Cohn getting into the taxi was more of a stroke of luck. On top of that, the fact that he happened to share it with a top Wall Street executive made it even more lucky. What are the chances of this happening? Not very likely. The luck runs even deeper, as the executive also happened to have started a new options business and was lacking employees. Cohn’s experience of overcoming his adversity and getting this new job was more of a moment of good luck than his personal traits, as even if he was an exceptional speaker, the timings, and opportunities were just too highly improbable.");
+            cityText.position.x = 25;
+            roomGroup.add(cityText);
             
         //     // Add essay introduction on the back wall
         //     const fontLoader = new THREE.FontLoader();
@@ -501,7 +563,7 @@
         //     });
             
             // Use this in your createSecretRoom function
-            const textWall = createTextWall();
+            const textWall = createTextWall("Introduction: ", "            We all experience adversities in life. Sometimes it's serious, like a major accident, while other times it's small things, like the struggles of everyday life. Most people in this society like to think that getting through these rough times is just a test of grit, resilience, and determination, or, in other words, our own personal character. While that might be true, we usually don't give much attention to one other important factor: luck. The truth is, a lot of people succeed not just because they worked hard, but because things happened to line up for them—perfect timing, random chances, or just pure luck. If one works hard enough, they can become successful—this is the idea that most people have about success in something. While this idea may be true, luck undeniably plays a huge role in one's success in overcoming adversity. Ultimately, while personal strength and determination help us push through tough times, factors like timing, luck, and circumstances often have a huge impact on whether we succeed or not.");
             roomGroup.add(textWall);
 
             // Add lighting to the room
@@ -544,9 +606,206 @@
 
         function teleportToPartTwo() {
             const cameraObject = controls.getObject();
-            cameraObject.position.set(-200, 2, 0); // Position
+            cameraObject.position.set(220, 2, 0); // Position
             velocity.set(0, 0, 0); // Reset velocity
+            document.getElementById("toForrestPrompt").style.display = "block";
         }
+
+        
+        // function teleportToPartThree() {
+        //     const cameraObject = controls.getObject();
+        //     cameraObject.position.set(0, 2, 0); // Position
+        //     velocity.set(0, 0, 0); // Reset velocity
+        // }
+
+
+        // Function to create the video room at z=200
+function createVideoRoom() {
+    const roomGroup = new THREE.Group();
+    
+    // Room dimensions
+    const roomWidth = 20;
+    const roomHeight = 10;
+    const roomDepth = 20;
+    
+    // Black material for the walls
+    const blackMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x000000, 
+        side: THREE.DoubleSide
+    });
+    
+    // Create floor
+    const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth);
+    const floorMesh = new THREE.Mesh(floorGeometry, blackMaterial);
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.position.y = -roomHeight/2;
+    roomGroup.add(floorMesh);
+    
+    // Add floor to collidable objects
+    floorMesh.userData.isCollidable = true;
+    collidableObjects.push(floorMesh);
+    
+    // Create ceiling
+    const ceilingMesh = new THREE.Mesh(floorGeometry, blackMaterial);
+    ceilingMesh.rotation.x = Math.PI / 2;
+    ceilingMesh.position.y = roomHeight/2;
+    roomGroup.add(ceilingMesh);
+    
+    // Add ceiling to collidable objects
+    ceilingMesh.userData.isCollidable = true;
+    collidableObjects.push(ceilingMesh);
+    
+    // Create back wall (for video)
+    const backWallGeometry = new THREE.PlaneGeometry(roomWidth, roomHeight);
+    const backWallMesh = new THREE.Mesh(backWallGeometry, blackMaterial);
+    backWallMesh.position.z = -roomDepth/2;
+    roomGroup.add(backWallMesh);
+    
+    // Add back wall to collidable objects
+    backWallMesh.userData.isCollidable = true;
+    collidableObjects.push(backWallMesh);
+    
+    // Create front wall with entrance
+    const frontWallGeometry = new THREE.PlaneGeometry(roomWidth, roomHeight);
+    const frontWallMesh = new THREE.Mesh(frontWallGeometry, blackMaterial);
+    frontWallMesh.position.z = roomDepth/2;
+    frontWallMesh.rotation.y = Math.PI;
+    roomGroup.add(frontWallMesh);
+    
+    // Add front wall to collidable objects
+    frontWallMesh.userData.isCollidable = true;
+    collidableObjects.push(frontWallMesh);
+    
+    // Create left wall
+    const sideWallGeometry = new THREE.PlaneGeometry(roomDepth, roomHeight);
+    const leftWallMesh = new THREE.Mesh(sideWallGeometry, blackMaterial);
+    leftWallMesh.position.x = -roomWidth/2;
+    leftWallMesh.rotation.y = Math.PI / 2;
+    roomGroup.add(leftWallMesh);
+    
+    // Add left wall to collidable objects
+    leftWallMesh.userData.isCollidable = true;
+    collidableObjects.push(leftWallMesh);
+    
+    // Create right wall
+    const rightWallMesh = new THREE.Mesh(sideWallGeometry, blackMaterial);
+    rightWallMesh.position.x = roomWidth/2;
+    rightWallMesh.rotation.y = -Math.PI / 2;
+    roomGroup.add(rightWallMesh);
+    
+    // Add right wall to collidable objects
+    rightWallMesh.userData.isCollidable = true;
+    collidableObjects.push(rightWallMesh);
+    
+    // Create entrance doorway in the front wall
+    const doorWidth = 4;
+    const doorHeight = 7;
+    const doorGeometry = new THREE.PlaneGeometry(doorWidth, doorHeight);
+    const doorMesh = new THREE.Mesh(doorGeometry, blackMaterial);
+    doorMesh.position.set(0, -roomHeight/2 + doorHeight/2, roomDepth/2 - 0.1);
+    doorMesh.rotation.y = Math.PI;
+    doorMesh.visible = false; // Make invisible to create a hole
+    roomGroup.add(doorMesh);
+    
+    // Create video element
+    const video = document.createElement('video');
+    video.src = 'https://firebasestorage.googleapis.com/v0/b/smalltalk-ed577.appspot.com/o/forrest.mp4?alt=media&token=6479c5d0-3d1e-436e-adac-e3a49f61ae4f'; // Sample video
+    // Important CORS settings
+    video.crossOrigin = 'anonymous';
+    video.loop = true;
+    video.muted = false; // Note: might need to start muted and unmute after user interaction
+    video.playsInline = true;
+    video.setAttribute('playsinline', ''); // For iOS
+    video.setAttribute('webkit-playsinline', ''); // For older iOS
+    video.style.display = 'none';
+    document.body.appendChild(video);
+    
+    // Create video texture with CORS handling
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.format = THREE.RGBAFormat;
+    videoTexture.crossOrigin = 'anonymous';
+    
+    // Create video screen
+    const videoWidth = roomWidth * 0.8;
+    const videoHeight = videoWidth * 9/16; // 16:9 aspect ratio
+    const videoGeometry = new THREE.PlaneGeometry(videoWidth, videoHeight);
+    const videoMaterial = new THREE.MeshBasicMaterial({ 
+        map: videoTexture,
+        side: THREE.FrontSide
+    });
+    
+    const videoScreen = new THREE.Mesh(videoGeometry, videoMaterial);
+    videoScreen.position.z = -roomDepth/2 + 0.1; // Slightly in front of back wall
+    videoScreen.position.y = 0; // Center vertically
+    roomGroup.add(videoScreen);
+    
+    // Add ambient light inside the room
+    const roomAmbientLight = new THREE.AmbientLight(0x404040, 0.5);
+    roomGroup.add(roomAmbientLight);
+    
+    // Add point light inside the room
+    const roomLight = new THREE.PointLight(0xffffff, 0.8, 30);
+    roomLight.position.set(0, 5, 0);
+    roomGroup.add(roomLight);
+    
+    // Position the room
+    roomGroup.position.set(0, 0, 200);
+    scene.add(roomGroup);
+    
+    // Function to start video when player enters the room
+    function startVideo() {
+        if (video.paused) {
+            // Try to play with user interaction
+            const playPromise = video.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    console.log("Video playback started");
+                })
+                .catch(error => {
+                    console.error("Video playback failed:", error);
+                });
+            }
+        }
+    }
+    
+    return {
+        roomGroup,
+        startVideo
+    };
+}
+
+// Create the video room
+const videoRoom = createVideoRoom();
+
+// Modify animate function to check if player is inside the video room
+// Add this inside your existing animate function
+function checkPlayerInVideoRoom() {
+    if (controls.isLocked) {
+        const playerPos = controls.getObject().position;
+        const distance = Math.abs(playerPos.z - 200);
+        
+        // If player is close to z=200 (the video room)
+        if (distance < 15) {
+            videoRoom.startVideo();
+        }
+    }
+}
+
+// Add this call in your animate function
+// checkPlayerInVideoRoom();
+
+// Modify teleportToPartThree function to position player in front of the doorway
+function teleportToPartThree() {
+    const cameraObject = controls.getObject();
+    cameraObject.position.set(0, 2, 205); // Position in front of the room entrance
+    velocity.set(0, 0, 0); // Reset velocity
+    
+    // Try to start the video immediately
+    videoRoom.startVideo();
+}
 
         // Model loading
         const modelLoader = new THREE.GLTFLoader();
@@ -634,6 +893,17 @@
                 velocity.y = jumpForce;
                 canJump = false;
             }
+
+
+            if (event.key.toLowerCase() === 'e' && canInteract && document.getElementById("toForrestPrompt").style.display === "block") {
+                teleportToPartThree();
+                document.getElementById("toForrestPrompt").style.display = "none";
+                canInteract = false; // Prevent repeated teleportation
+                canStartJump = true; // Enable jumping again
+                setTimeout(() => { canInteract = true; }, 1000); // Reset after 1 second
+            }
+
+
             
             // Handle interaction with button (E key)
             if (event.key.toLowerCase() === 'e' && isNearButton && canInteract) {
@@ -648,11 +918,11 @@
                 if (amountOfTimesTriedToGoBack == 0){
                     document.getElementById("goBackPrompt").innerText = 'Something broke! Try pressing E again.';
                 } else if (amountOfTimesTriedToGoBack == 1){
-                    document.getElementById("goBackPrompt").innerText = 'Press E to generate a random number. (1-5)\nIf your number is 1 then you can go back.';
+                    document.getElementById("goBackPrompt").innerText = 'Press E to generate a random number. (1-5)\nIf your number is 1 then you can go to the next place.';
                 } else {
                     const randomNumber = Math.floor(Math.random() * 5) + 1;
                     if (randomNumber === 1) {
-                        teleportToSpawn();
+                        teleportToPartTwo();
                         document.getElementById("goBackPrompt").innerText = 'You rolled a ' + randomNumber + '!';
                         canInteract = false; // Allow interaction again
                         canStartJump = true; // Enable jumping again
