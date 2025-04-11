@@ -88,6 +88,9 @@
     <div class="interactPrompt" id="interactPrompt">Press E to interact</div>
     <div class="interactPrompt" id="goBackPrompt">Press E to go to the next place</div>
     <div class="interactPrompt" id="toForrestPrompt">Press E to go to the next place</div>
+    <div class="interactPrompt" id="toPersonalExample">Press E to go to the next place</div>
+    <div class="interactPrompt" id="toConclusion">Press E to go to the conclusion</div>
+    <div class="interactPrompt" id="finished">🎉 Thanks for participating! References are on classroom. 🎉</div>
     <script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@latest/examples/js/controls/PointerLockControls.js"></script>
@@ -291,7 +294,7 @@
             return button;
         }
 
-        function createTextWall(stareee, essayText1) {
+        function createTextWall(fontsize, stareee, essayText1) {
     // Create a canvas
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -306,7 +309,7 @@
     
     // Style for text
     context.fillStyle = '#000000';
-    context.font = '36px Arial';
+    context.font = fontsize + 'px Arial';
     context.textAlign = 'left';
     
     // Text to display (paragraph text)
@@ -514,7 +517,7 @@
             rightWallMesh2.position.y = 4;
             roomGroup.add(rightWallMesh2);
             rightWallMesh2.userData.isCollidable = true;
-            //collidableObjects.push(rightWallMesh2);
+            collidableObjects.push(rightWallMesh2);
             rightWallMesh2.castShadow = false;
             rightWallMesh2.receiveShadow = false;
 
@@ -528,13 +531,13 @@
             rightWallMesh1.receiveShadow = false;
             
             rightWallMesh1.userData.isCollidable = true;
-            //collidableObjects.push(rightWallMesh1);
+            collidableObjects.push(rightWallMesh1);
 
             const roomLight1 = new THREE.PointLight(0xffffff, 5.5, 30);
             roomLight1.position.set(225, 5, 0);
             roomGroup.add(roomLight1);
             
-            const cityText = createTextWall("Gary Cohn: ", "            Gary Cohn's journey clearly illustrates how luck can significantly influence success. In Malcolm Gladwell's David and Goliath, Cohn, who struggled with dyslexia, out of the blue, hopped into a taxi with a top Wall Street executive (Gladwell, 2013, p. 121). During his taxi ride, he “[pretended] to be an experienced options trader when in fact he was not, ”(Gladwell, 2013, p. 122). Cohn ended up interviewing and getting the job, which was revolutionary for him, as a job like this was so unexpected for him. Previous to this, he was “selling aluminum siding and window frames for the U.S. Steel in Cleveland,” (Gladwell, 2013, p. 120). Gladwell in his novel pushes this story as the result of the certain strengths Cohn possessed due to his dyslexia. Although, Cohn getting into the taxi was more of a stroke of luck. On top of that, the fact that he happened to share it with a top Wall Street executive made it even more lucky. What are the chances of this happening? Not very likely. The luck runs even deeper, as the executive also happened to have started a new options business and was lacking employees. Cohn’s experience of overcoming his adversity and getting this new job was more of a moment of good luck than his personal traits, as even if he was an exceptional speaker, the timings, and opportunities were just too highly improbable.");
+            const cityText = createTextWall(36, "Gary Cohn: ", "            Gary Cohn's journey clearly illustrates how luck can significantly influence success. In Malcolm Gladwell's David and Goliath, Cohn, who struggled with dyslexia, out of the blue, hopped into a taxi with a top Wall Street executive (Gladwell, 2013, p. 121). During his taxi ride, he “[pretended] to be an experienced options trader when in fact he was not, ”(Gladwell, 2013, p. 122). Cohn ended up interviewing and getting the job, which was revolutionary for him, as a job like this was so unexpected for him. Previous to this, he was “selling aluminum siding and window frames for the U.S. Steel in Cleveland,” (Gladwell, 2013, p. 120). Gladwell in his novel pushes this story as the result of the certain strengths Cohn possessed due to his dyslexia. Although, Cohn getting into the taxi was more of a stroke of luck. On top of that, the fact that he happened to share it with a top Wall Street executive made it even more lucky. What are the chances of this happening? Not very likely. The luck runs even deeper, as the executive also happened to have started a new options business and was lacking employees. Cohn’s experience of overcoming his adversity and getting this new job was more of a moment of good luck than his personal traits, as even if he was an exceptional speaker, the timings, and opportunities were just too highly improbable.");
             cityText.position.x = 25;
             roomGroup.add(cityText);
             
@@ -563,7 +566,7 @@
         //     });
             
             // Use this in your createSecretRoom function
-            const textWall = createTextWall("Introduction: ", "            We all experience adversities in life. Sometimes it's serious, like a major accident, while other times it's small things, like the struggles of everyday life. Most people in this society like to think that getting through these rough times is just a test of grit, resilience, and determination, or, in other words, our own personal character. While that might be true, we usually don't give much attention to one other important factor: luck. The truth is, a lot of people succeed not just because they worked hard, but because things happened to line up for them—perfect timing, random chances, or just pure luck. If one works hard enough, they can become successful—this is the idea that most people have about success in something. While this idea may be true, luck undeniably plays a huge role in one's success in overcoming adversity. Ultimately, while personal strength and determination help us push through tough times, factors like timing, luck, and circumstances often have a huge impact on whether we succeed or not.");
+            const textWall = createTextWall(36, "Introduction: ", "            We all experience adversities in life. Sometimes it's serious, like a major accident, while other times it's small things, like the struggles of everyday life. Most people in this society like to think that getting through these rough times is just a test of grit, resilience, and determination, or, in other words, our own personal character. While that might be true, we usually don't give much attention to one other important factor: luck. The truth is, a lot of people succeed not just because they worked hard, but because things happened to line up for them—perfect timing, random chances, or just pure luck. If one works hard enough, they can become successful—this is the idea that most people have about success in something. While this idea may be true, luck undeniably plays a huge role in one's success in overcoming adversity. Ultimately, while personal strength and determination help us push through tough times, factors like timing, luck, and circumstances often have a huge impact on whether we succeed or not.");
             roomGroup.add(textWall);
 
             // Add lighting to the room
@@ -609,6 +612,21 @@
             cameraObject.position.set(220, 2, 0); // Position
             velocity.set(0, 0, 0); // Reset velocity
             document.getElementById("toForrestPrompt").style.display = "block";
+        }
+
+        function teleportToPartFour() {
+            const cameraObject = controls.getObject();
+            cameraObject.position.set(-100, 2, 0); // Position
+            velocity.set(0, 0, 0); // Reset velocity
+            document.getElementById("toConclusion").style.display = "block";
+            videoRoom.endVideo();
+        }
+
+        function teleportToPartFive() {
+            const cameraObject = controls.getObject();
+            cameraObject.position.set(500, 2, 0); // Position
+            velocity.set(0, 0, 0); // Reset velocity
+            document.getElementById("finished").style.display = "block";
         }
 
         
@@ -706,26 +724,30 @@ function createVideoRoom() {
     doorMesh.rotation.y = Math.PI;
     doorMesh.visible = false; // Make invisible to create a hole
     roomGroup.add(doorMesh);
+
+    // create textwall thing
+    const textWall = createTextWall(28, "Forrest Gump: ", "            While Gary Cohn’s story represents a key example of the importance of luck and timing in becoming successful, Forrest Gump offers another perspective on how luck plays a crucial role in overcoming adversity. Just like how Cohn had perfect timing with his encounter with the executive, Forrest’s life in the movie is shaped by random events that seem to align perfectly. This movie is an even greater example of timing and luck as throughout the entire movie, Forrest never has any intentions for what he does or what happens to him. For instance, in the movie, Forrest Gump goes shrimping on his boat during a destructive hurricane, and after the storm, his boat surprisingly was the only survivor (Zemeckis, 1994). All the other boats (which were not out at sea) had been destroyed by the storm. The only possible explanation for this was luck. He was just lucky enough to have the only surviving boat, which let him take control of the entire shrimp market of the area. Another notable example of luck in the movie is when Forrest recklessly saves his comrades in Vietnam (Zemeckis, 1994). The word reckless is key here, because Forrest had no strategies for saving his friends. He simply ran as fast as he could, saving as many soldiers as he could. After all that, he was shot only once, and it was nowhere near lethal. Recklessly running through a bombardment of enemy gunfire in the jungles of Vietnam, while carrying his comrades and not dying, was clearly just a stroke of luck.");
+    textWall.position.x = 9.75;
+    textWall.position.y = 0;
+    textWall.position.z = 3;
+    textWall.rotation.y = Math.PI / -2;
+    roomGroup.add(textWall);
+
     
     // Create video element
     const video = document.createElement('video');
-    video.src = 'https://firebasestorage.googleapis.com/v0/b/smalltalk-ed577.appspot.com/o/forrest.mp4?alt=media&token=6479c5d0-3d1e-436e-adac-e3a49f61ae4f'; // Sample video
-    // Important CORS settings
+    video.src = 'textures/forrest.mp4'; // Sample video
     video.crossOrigin = 'anonymous';
     video.loop = true;
-    video.muted = false; // Note: might need to start muted and unmute after user interaction
+    video.muted = false;
     video.playsInline = true;
-    video.setAttribute('playsinline', ''); // For iOS
-    video.setAttribute('webkit-playsinline', ''); // For older iOS
     video.style.display = 'none';
     document.body.appendChild(video);
     
-    // Create video texture with CORS handling
+    // Create video texture
     const videoTexture = new THREE.VideoTexture(video);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
-    videoTexture.format = THREE.RGBAFormat;
-    videoTexture.crossOrigin = 'anonymous';
     
     // Create video screen
     const videoWidth = roomWidth * 0.8;
@@ -770,10 +792,17 @@ function createVideoRoom() {
             }
         }
     }
+
+    function endVideo() {
+        if (!video.paused) {
+            video.pause();
+        }
+    }
     
     return {
         roomGroup,
-        startVideo
+        startVideo,
+        endVideo
     };
 }
 
@@ -802,6 +831,9 @@ function teleportToPartThree() {
     const cameraObject = controls.getObject();
     cameraObject.position.set(0, 2, 205); // Position in front of the room entrance
     velocity.set(0, 0, 0); // Reset velocity
+
+    document.getElementById("toForrestPrompt").style.display = "none";
+    document.getElementById("toPersonalExample").style.display = "block";
     
     // Try to start the video immediately
     videoRoom.startVideo();
@@ -850,16 +882,103 @@ function teleportToPartThree() {
 
 
 
+        // Model loading
+        let modelClass;
+
+        // This URL points to a sample 3D model - you may need to use your own hosted model
+        modelLoader.load(
+            'models/classroom/scene.gltf',
+            function(gltf) {
+                modelClass = gltf.scene;
+                modelClass.traverse(function(node) {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                
+                // Center and scale the model
+                const box = new THREE.Box3().setFromObject(modelClass);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 10 / maxDim;
+                modelClass.scale.set(scale, scale, scale);
+                
+                modelClass.position.sub(center.multiplyScalar(scale));
+                modelClass.position = new THREE.Vector3(0, 0, 0); // Position model at origin
+                modelClass.position.y = 0.5; // Raise model slightly above ground
+                modelClass.position.x = -100;
+                modelClass.rotation.y = -Math.PI / 1;
+                modelClass.position.z = 0;
+                scene.add(modelClass);
+            },
+            function(xhr) {
+                // Progress callback if needed
+            },
+            function(error) {
+                console.error('An error happened while loading the model:', error);
+            }
+        );
+
+        // create textwall for classroom
+        let classTextWall = createTextWall(24, "School Testing: ", "            In the same way that Gary Cohn and Forrest Gump’s successes were shaped by timing and luck, I’ve experienced this in my own life too. One time, I had completely forgotten to study for a really important test. Well, I didn’t forget, but I’m not one to sleep late, so I simply had to sacrifice the test grade and hope that I could tank the grade. When I walked into class, however, I stood in shock as my teacher turned out to be absent! The test was automatically pushed to the next class, giving me the extra time I desperately needed. I ended up studying that night and did way better than I would’ve if the test had happened that day as planned. Just like Forrest’s boat surviving the hurricane or Cohn’s lucky taxi ride, my success in overcoming my adversity here (which was not having studied for the test) wasn’t from determination or preparation, or in fact any other character trait. It was pure luck, and if it wasn’t for my luck that day, my genesis wouldn’t be looking so hot.");
+        classTextWall.position.x = -100;
+        classTextWall.position.y = 1;
+        classTextWall.position.z = -4.5;
+        classTextWall.scale.set(0.5, 0.5, 0.5);
+        scene.add(classTextWall);
 
 
+        // Model loading
+        let modelIsland;
 
+        // This URL points to a sample 3D model - you may need to use your own hosted model
+        modelLoader.load(
+            'models/flying_island_2/scene.gltf',
+            function(gltf) {
+                modelIsland = gltf.scene;
+                modelIsland.traverse(function(node) {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                
+                // Center and scale the model
+                const box = new THREE.Box3().setFromObject(modelIsland);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 75 / maxDim;
+                modelIsland.scale.set(scale, scale, scale);
+                
+                modelIsland.position.sub(center.multiplyScalar(scale));
+                modelIsland.position = new THREE.Vector3(0, 0, 0); // Position model at origin
+                modelIsland.position.y = -43; // Raise model slightly above ground
+                modelIsland.position.x = 500;
+                modelIsland.rotation.y = -Math.PI / 1;
+                // modelIsland.position.z = -300;
+                scene.add(modelIsland);
+            },
+            function(xhr) {
+                // Progress callback if needed
+            },
+            function(error) {
+                console.error('An error happened while loading the model:', error);
+            }
+        );
 
-
-
-
-
-
-
+        // create textwall for classroom
+        let islandTextWall = createTextWall(42, "Conclusion:", "            Although personal strength and determination are key to overcoming adversity, factors such as timing, opportunity, and luck frequently play a crucial role in shaping success and determining outcomes. Take Gary Cohn's success for instance, he would have never been as successful as he had been if it were not for his exceptional luck that day. Him getting into the taxi with a top Wall Street executive was nothing less than a miracle in terms of luck. Then there’s Forrest Gump, who had everything seemingly work out for him, like his shrimp boat surviving the hurricane or his reckless heroism in the Vietnam War. Even my own experience shows how sometimes success isn’t just about effort, but more about luck. Life is unpredictable, and maybe that has more of an influence on our successes than we realize.");
+        islandTextWall.position.x = 490;
+        islandTextWall.position.y = 2.5;
+        islandTextWall.position.z = 0;
+        islandTextWall.rotation.y = Math.PI / 2;
+        // classTextWall.scale.set(0.5, 0.5, 0.5);
+        scene.add(islandTextWall);
 
         
         // Player physics variables
@@ -899,11 +1018,26 @@ function teleportToPartThree() {
                 teleportToPartThree();
                 document.getElementById("toForrestPrompt").style.display = "none";
                 canInteract = false; // Prevent repeated teleportation
-                canStartJump = true; // Enable jumping again
+                canStartJump = false; // Enable jumping again
                 setTimeout(() => { canInteract = true; }, 1000); // Reset after 1 second
             }
 
+            if (event.key.toLowerCase() === 'e' && canInteract && document.getElementById("toPersonalExample").style.display === "block") {
+                teleportToPartFour();
+                document.getElementById("toPersonalExample").style.display = "none";
+                canInteract = false; // Prevent repeated teleportation
+                canStartJump = false; // Enable jumping again
+                console.log("teleporting to part four")
+                setTimeout(() => { canInteract = true; }, 1000); // Reset after 1 second
+            }
 
+            if (event.key.toLowerCase() === 'e' && canInteract && document.getElementById("toConclusion").style.display === "block") {
+                teleportToPartFive();
+                document.getElementById("toConclusion").style.display = "none";
+                canInteract = false; // Prevent repeated teleportation
+                canStartJump = true; // Enable jumping again
+                setTimeout(() => { canInteract = true; }, 1000); // Reset after 1 second
+            }
             
             // Handle interaction with button (E key)
             if (event.key.toLowerCase() === 'e' && isNearButton && canInteract) {
