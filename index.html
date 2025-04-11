@@ -177,65 +177,62 @@
         scene.background = textureCube;
 
 
-        // Text in sky
         function addSkyText() {
-            // Using the FontLoader to load a font
-            const fontLoader = new THREE.FontLoader();
-            
-            // Loading the font (using a common Three.js font)
-            fontLoader.load('https://cdn.jsdelivr.net/npm/three@latest/examples/fonts/helvetiker_bold.typeface.json', function(font) {
-                // Text geometry parameters
-                const textOptions = {
-                    font: font,
-                    size: 3,          // Size of the text
-                    height: 0.8,      // Thickness/depth of the text
-                    curveSegments: 12, // Number of points on the curves
-                    bevelEnabled: true,
-                    bevelThickness: 0.2,
-                    bevelSize: 0.1,
-                    bevelOffset: 0,
-                    bevelSegments: 5
-                };
-                
-                // Create text geometry with the message
-                const textGeometry = new THREE.TextGeometry('The Role of Luck in Overcoming Adversity', textOptions);
-                
-                // Center the text geometry
-                textGeometry.computeBoundingBox();
-                const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
-                textGeometry.translate(-textWidth / 2, -8, 0);
-                
-                // Create a material for the text - using gradient material for nice effect
-                const textMaterial = [
-                    // Front face
-                    new THREE.MeshPhongMaterial({ color: 0xAAAAAA, specular: 0x555555, shininess: 30 }),
-                    // Side faces
-                    new THREE.MeshPhongMaterial({ color: 0x888888, specular: 0x222222, shininess: 30 })
-                ];
-                
-                // Create the text mesh
-                const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-                
-                // Position the text high in the sky, visible from spawn position
-                textMesh.position.set(0, 30, -40); // y: height, z: distance in front
-                
-                // Add subtle rotation for better visibility
-                textMesh.rotation.x = Math.PI * 0.1; // Slight tilt for better viewing from below
-                
-                // Add to scene
-                scene.add(textMesh);
-                
-                // Create a spotlight to highlight the text
-                const spotlight = new THREE.SpotLight(0xffffff, 1.5);
-                spotlight.position.set(0, 25, -30);
-                spotlight.target = textMesh;
-                spotlight.angle = Math.PI / 6;
-                spotlight.penumbra = 0.1;
-                spotlight.distance = 60;
-                scene.add(spotlight);
-            });
-        }
-        
+    const fontLoader = new THREE.FontLoader();
+
+    fontLoader.load('https://cdn.jsdelivr.net/npm/three@latest/examples/fonts/helvetiker_bold.typeface.json', function(font) {
+        // Main title text
+        const mainTextOptions = {
+            font: font,
+            size: 3,
+            height: 0.8,
+            curveSegments: 12,
+            bevelEnabled: true,
+            bevelThickness: 0.2,
+            bevelSize: 0.1,
+            bevelOffset: 0,
+            bevelSegments: 5
+        };
+
+        const mainTextGeometry = new THREE.TextGeometry('The Role of Luck in Overcoming Adversity', mainTextOptions);
+        mainTextGeometry.computeBoundingBox();
+        const mainTextWidth = mainTextGeometry.boundingBox.max.x - mainTextGeometry.boundingBox.min.x;
+        mainTextGeometry.translate(-mainTextWidth / 2, -8, 0);
+
+        const textMaterial = [
+            new THREE.MeshPhongMaterial({ color: 0xAAAAAA, specular: 0x555555, shininess: 30 }),
+            new THREE.MeshPhongMaterial({ color: 0x888888, specular: 0x222222, shininess: 30 })
+        ];
+
+        const mainTextMesh = new THREE.Mesh(mainTextGeometry, textMaterial);
+        mainTextMesh.position.set(0, 30, -40);
+        mainTextMesh.rotation.x = Math.PI * 0.1;
+        scene.add(mainTextMesh);
+
+        // Subtitle text
+        const subTextOptions = { ...mainTextOptions, size: 2, height: 0.4 };
+        const subTextGeometry = new THREE.TextGeometry('by shahrian masud', subTextOptions);
+        subTextGeometry.computeBoundingBox();
+        const subTextWidth = subTextGeometry.boundingBox.max.x - subTextGeometry.boundingBox.min.x;
+        subTextGeometry.translate(-subTextWidth / 2, -8, 0);
+
+        const subTextMesh = new THREE.Mesh(subTextGeometry, textMaterial);
+        subTextMesh.position.set(0, 26, -40); // slightly below the main title
+        subTextMesh.rotation.x = Math.PI * 0.1;
+        scene.add(subTextMesh);
+
+        // Spotlight
+        const spotlight = new THREE.SpotLight(0xffffff, 1.5);
+        spotlight.position.set(0, 25, -30);
+        spotlight.target = mainTextMesh;
+        spotlight.angle = Math.PI / 6;
+        spotlight.penumbra = 0.1;
+        spotlight.distance = 60;
+        scene.add(spotlight);
+    });
+}
+
+
         // Call the function to add sky text
         addSkyText();
 
